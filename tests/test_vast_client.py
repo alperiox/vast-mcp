@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,12 +8,12 @@ from vast_mcp.vast_client import VastClient
 
 
 class TestApiKeyResolution:
-    def test_uses_config_key_first(self, tmp_path):
+    def test_uses_config_key_first(self):
         config = Config(api_key="config-key")
         client = VastClient(config)
         assert client.api_key == "config-key"
 
-    def test_falls_back_to_env_var(self, tmp_path):
+    def test_falls_back_to_env_var(self):
         config = Config(api_key=None)
         with patch.dict(os.environ, {"VAST_API_KEY": "env-key"}):
             client = VastClient(config)
