@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vast-mcp"
+version = "0.1.0"
+description = "MCP server for managing Vast.ai GPU instances"
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = [
+    "mcp>=1.0",
+    "vastai>=1.0",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+vast-mcp = "vast_mcp.mcp_server:main"
+vast-monitor = "vast_mcp.monitor:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vast_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
