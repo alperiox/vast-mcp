@@ -1,6 +1,6 @@
 """Integration test: save experiment -> load -> create -> register service -> check -> destroy."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from vast_mcp.models import Config
 from vast_mcp.state import StateManager
