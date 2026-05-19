@@ -35,17 +35,15 @@ class VastClient:
         instance_type = self._config.default_instance_type
         type_filter = ""
         if instance_type == "container":
-            type_filter = "rentable=true machine_id!=0"
+            type_filter = "machine_id!=0"
         elif instance_type == "vm":
-            type_filter = "rentable=true is_vm=true"
-        else:
-            type_filter = "rentable=true"
+            type_filter = "is_vm=true"
 
         full_query = f"{type_filter} {query}".strip()
         sort = sort_by or self._config.default_sort
         limit = max_results or self._config.default_max_results
 
-        result = self._sdk.search_offers(query=full_query, sort_order=sort, limit=limit)
+        result = self._sdk.search_offers(query=full_query, order=sort, limit=limit)
         if result is None:
             return []
         return result if isinstance(result, list) else []
@@ -65,9 +63,11 @@ class VastClient:
         )
 
     def show_instances(self) -> list[dict]:
-        result = self._sdk.show_instances()
+        result = self._sdk.show_instances_v1({})
         if result is None:
             return []
+        if isinstance(result, dict):
+            return result.get("instances", [])
         return result if isinstance(result, list) else []
 
     def stop_instance(self, instance_id: int) -> None:
@@ -78,3 +78,6 @@ class VastClient:
 
     def destroy_instance(self, instance_id: int) -> None:
         self._sdk.destroy_instance(id=instance_id)
+
+    def ssh_url(self, instance_id: int) -> str:
+        return self._sdk.ssh_url(id=instance_id)

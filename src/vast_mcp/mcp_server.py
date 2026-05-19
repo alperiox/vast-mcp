@@ -190,31 +190,20 @@ def get_ssh_command(instance_id: int) -> str:
     if inst.status != "running":
         return f"Instance {instance_id} is {inst.status}, not running."
 
-    # Fetch SSH connection info from Vast.ai API
     try:
         client = _get_client()
-        api_instances = client.show_instances()
-        api_data = next((i for i in api_instances if i.get("id") == instance_id), None)
+        ssh_url = client.ssh_url(instance_id)
     except Exception as e:
-        return f"Error fetching instance info: {e}"
+        return f"Error fetching SSH info: {e}"
 
-    if not api_data:
-        return f"Instance {instance_id} not found on Vast.ai API."
-
-    ssh_host = api_data.get("ssh_host", api_data.get("public_ipaddr", "?"))
-    ssh_port = api_data.get("ssh_port", 22)
-
-    key_flag = ""
-    if config.ssh_key_path:
-        key_flag = f" -i {config.ssh_key_path}"
-    else:
+    key_flag = f" -i {config.ssh_key_path}" if config.ssh_key_path else ""
+    if not key_flag:
         key_flag = "  # No SSH key configured — run set_ssh_key first"
 
     return (
         f"SSH into instance {instance_id} ({inst.gpu_name} x{inst.num_gpus}):\n\n"
-        f"  ssh -p {ssh_port}{key_flag} root@{ssh_host}\n\n"
-        f"Or use SCP to copy files:\n"
-        f"  scp -P {ssh_port}{key_flag} local_file root@{ssh_host}:/path/"
+        f"  {ssh_url}{key_flag}\n\n"
+        f"SDK SSH URL: {ssh_url}"
     )
 
 

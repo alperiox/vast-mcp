@@ -84,10 +84,12 @@ class TestInstanceOperations:
 
     def test_show_instances(self):
         client = self._make_client()
-        client._sdk.show_instances.return_value = [
-            {"id": 1, "machine_id": 10, "gpu_name": "A100", "num_gpus": 1,
-             "image_uuid": "img", "actual_status": "running"}
-        ]
+        client._sdk.show_instances_v1.return_value = {
+            "instances": [
+                {"id": 1, "machine_id": 10, "gpu_name": "A100", "num_gpus": 1,
+                 "image_uuid": "img", "actual_status": "running"}
+            ]
+        }
         result = client.show_instances()
         assert len(result) == 1
 
