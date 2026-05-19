@@ -6,7 +6,7 @@ from pathlib import Path
 import httpx
 from mcp.server.fastmcp import FastMCP
 
-from vast_mcp.models import Config, Instance, Service, Experiment, ExperimentSpecs, _now_iso
+from vast_mcp.models import Experiment, ExperimentSpecs, Instance, Service, _now_iso
 from vast_mcp.state import StateManager
 from vast_mcp.vast_client import VastClient
 
