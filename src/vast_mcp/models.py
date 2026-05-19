@@ -11,6 +11,7 @@ def _now_iso() -> str:
 @dataclass
 class Config:
     api_key: str | None = None
+    ssh_key_path: str | None = None
     idle_threshold_hours: int = 10
     monitor_interval_minutes: int = 30
     default_instance_type: str = "container"  # "container" | "vm" | "all"
@@ -20,6 +21,7 @@ class Config:
     def to_dict(self) -> dict:
         return {
             "api_key": self.api_key,
+            "ssh_key_path": self.ssh_key_path,
             "idle_threshold_hours": self.idle_threshold_hours,
             "monitor_interval_minutes": self.monitor_interval_minutes,
             "default_instance_type": self.default_instance_type,

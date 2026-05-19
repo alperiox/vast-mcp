@@ -158,6 +158,66 @@ def set_config(key: str, value: str) -> str:
     return _set_config(_get_state(), key=key, value=converted)
 
 
+@mcp_app.tool()
+def set_ssh_key(path: str) -> str:
+    """Set the path to the SSH private key used for connecting to Vast.ai instances.
+
+    Args:
+        path: Absolute path to the SSH private key file (e.g., '~/.ssh/vastai_key').
+    """
+    from pathlib import Path as P
+    expanded = P(path).expanduser().resolve()
+    if not expanded.exists():
+        return f"Error: File not found: {expanded}"
+    if not expanded.is_file():
+        return f"Error: Not a file: {expanded}"
+    return _set_config(_get_state(), key="ssh_key_path", value=str(expanded))
+
+
+@mcp_app.tool()
+def get_ssh_command(instance_id: int) -> str:
+    """Get the SSH command to connect to a tracked instance.
+
+    Args:
+        instance_id: The instance ID to connect to.
+    """
+    sm = _get_state()
+    config = sm.load_config()
+    instances = sm.load_instances()
+    if instance_id not in instances:
+        return f"Instance {instance_id} not tracked."
+    inst = instances[instance_id]
+    if inst.status != "running":
+        return f"Instance {instance_id} is {inst.status}, not running."
+
+    # Fetch SSH connection info from Vast.ai API
+    try:
+        client = _get_client()
+        api_instances = client.show_instances()
+        api_data = next((i for i in api_instances if i.get("id") == instance_id), None)
+    except Exception as e:
+        return f"Error fetching instance info: {e}"
+
+    if not api_data:
+        return f"Instance {instance_id} not found on Vast.ai API."
+
+    ssh_host = api_data.get("ssh_host", api_data.get("public_ipaddr", "?"))
+    ssh_port = api_data.get("ssh_port", 22)
+
+    key_flag = ""
+    if config.ssh_key_path:
+        key_flag = f" -i {config.ssh_key_path}"
+    else:
+        key_flag = "  # No SSH key configured — run set_ssh_key first"
+
+    return (
+        f"SSH into instance {instance_id} ({inst.gpu_name} x{inst.num_gpus}):\n\n"
+        f"  ssh -p {ssh_port}{key_flag} root@{ssh_host}\n\n"
+        f"Or use SCP to copy files:\n"
+        f"  scp -P {ssh_port}{key_flag} local_file root@{ssh_host}:/path/"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Task 6: Instance Lifecycle internal functions
 # ---------------------------------------------------------------------------
