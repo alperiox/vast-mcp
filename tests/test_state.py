@@ -1,6 +1,4 @@
-import json
-
-from vast_mcp.models import Config, Experiment, ExperimentSpecs, Instance, Service
+from vast_mcp.models import Config, Experiment, ExperimentSpecs, Instance
 from vast_mcp.state import StateManager
 
 
