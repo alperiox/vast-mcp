@@ -19,7 +19,9 @@ class StateManager:
 
     def _write_json(self, filename: str, data: dict) -> None:
         path = self.state_dir / filename
-        path.write_text(json.dumps(data, indent=2))
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, indent=2))
+        tmp.replace(path)  # atomic on POSIX
 
     # --- Config ---
 

@@ -16,7 +16,6 @@ mcp_app = FastMCP(name="vast-mcp")
 
 # --- Globals initialized at startup ---
 _state: StateManager | None = None
-_client: VastClient | None = None
 
 
 def _get_state() -> StateManager:
@@ -27,11 +26,8 @@ def _get_state() -> StateManager:
 
 
 def _get_client() -> VastClient:
-    global _client
-    if _client is None:
-        config = _get_state().load_config()
-        _client = VastClient(config)
-    return _client
+    config = _get_state().load_config()
+    return VastClient(config)
 
 
 # ---------------------------------------------------------------------------
@@ -137,8 +133,31 @@ def get_config() -> str:
 
 @mcp_app.tool()
 def set_config(key: str, value: str) -> str:
-    """Update a configuration field."""
-    return _set_config(_get_state(), key=key, value=value)
+    """Update a configuration field.
+
+    Args:
+        key: Config key (idle_threshold_hours, monitor_interval_minutes, default_instance_type, default_sort, default_max_results).
+        value: New value (numeric values are converted automatically).
+    """
+    # Coerce to the correct type based on the existing field
+    from vast_mcp.models import Config
+    if key not in Config.__dataclass_fields__:
+        return f"Error: Unknown config key: {key}"
+    if key == "api_key":
+        return "Error: Use VAST_API_KEY env var or 'vastai set api-key' to set the API key."
+    field_type = Config.__dataclass_fields__[key].type
+    converted: int | float | str = value
+    if field_type == "int":
+        try:
+            converted = int(value)
+        except ValueError:
+            return f"Error: {key} requires an integer value."
+    elif field_type == "float":
+        try:
+            converted = float(value)
+        except ValueError:
+            return f"Error: {key} requires a numeric value."
+    return _set_config(_get_state(), key=key, value=converted)
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +209,10 @@ def _stop_instance(sm: StateManager, client, instance_id: int) -> str:
     instances = sm.load_instances()
     if instance_id not in instances:
         return f"Instance {instance_id} not tracked."
-    client.stop_instance(instance_id)
+    try:
+        client.stop_instance(instance_id)
+    except Exception as e:
+        return f"Error stopping instance {instance_id}: {e}"
     sm.update_instance_status(instance_id, "stopped")
     return f"Stopped instance {instance_id}."
 
@@ -200,7 +222,10 @@ def _start_instance(sm: StateManager, client, instance_id: int) -> str:
     instances = sm.load_instances()
     if instance_id not in instances:
         return f"Instance {instance_id} not tracked."
-    client.start_instance(instance_id)
+    try:
+        client.start_instance(instance_id)
+    except Exception as e:
+        return f"Error starting instance {instance_id}: {e}"
     sm.update_instance_status(instance_id, "running")
     return f"Started instance {instance_id}."
 
@@ -210,7 +235,10 @@ def _destroy_instance(sm: StateManager, client, instance_id: int) -> str:
     instances = sm.load_instances()
     if instance_id not in instances:
         return f"Instance {instance_id} not tracked."
-    client.destroy_instance(instance_id)
+    try:
+        client.destroy_instance(instance_id)
+    except Exception as e:
+        return f"Error destroying instance {instance_id}: {e}"
     sm.remove_instance(instance_id)
     return f"Destroyed instance {instance_id}."
 
@@ -474,8 +502,18 @@ def _delete_experiment(sm: StateManager, name: str) -> str:
 
 @mcp_app.tool()
 def save_experiment(name: str, specs: str, summary: str, image: str | None = None) -> str:
-    """Save an experiment template. specs is a JSON string."""
-    specs_dict = json_module.loads(specs)
+    """Save an experiment template.
+
+    Args:
+        name: Template name (e.g., 'llama-finetune').
+        specs: JSON string of specs (e.g., '{"gpu_name": "RTX_4090", "num_gpus": 2}').
+        summary: Short description.
+        image: Optional Docker image.
+    """
+    try:
+        specs_dict = json_module.loads(specs)
+    except json_module.JSONDecodeError as e:
+        return f"Error: Invalid JSON in specs: {e}"
     return _save_experiment(_get_state(), name=name, specs=specs_dict, summary=summary, image=image)
 
 
@@ -487,8 +525,18 @@ def list_experiments() -> str:
 
 @mcp_app.tool()
 def load_experiment(name: str, overrides: str | None = None) -> str:
-    """Load an experiment template and search for matching offers. overrides is a JSON string."""
-    overrides_dict = json_module.loads(overrides) if overrides else None
+    """Load an experiment template and search for matching offers.
+
+    Args:
+        name: Template name to load.
+        overrides: Optional JSON string of spec overrides (e.g., '{"num_gpus": 4}').
+    """
+    overrides_dict = None
+    if overrides:
+        try:
+            overrides_dict = json_module.loads(overrides)
+        except json_module.JSONDecodeError as e:
+            return f"Error: Invalid JSON in overrides: {e}"
     return _load_experiment(_get_state(), _get_client(), name=name, overrides=overrides_dict)
 
 

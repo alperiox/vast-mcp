@@ -58,7 +58,7 @@ class Monitor:
                 if svc.endpoint:
                     try:
                         resp = httpx.get(svc.endpoint, timeout=5)
-                        if resp.status_code < 500:
+                        if resp.status_code < 400:
                             svc.last_alive = _now_iso()
                     except Exception:
                         pass
@@ -77,10 +77,11 @@ class Monitor:
             all_idle = True
             max_idle_hours = 0.0
             for svc in inst.services:
-                if svc.last_alive is None:
-                    all_idle = False
-                    continue
-                last = datetime.fromisoformat(svc.last_alive)
+                if svc.last_alive is not None:
+                    last = datetime.fromisoformat(svc.last_alive)
+                else:
+                    # Never been alive — use registration time as baseline
+                    last = datetime.fromisoformat(svc.registered_at)
                 hours_idle = (now - last).total_seconds() / 3600
                 max_idle_hours = max(max_idle_hours, hours_idle)
                 if hours_idle < threshold_hours:

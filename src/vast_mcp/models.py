@@ -102,7 +102,7 @@ class ExperimentSpecs:
     def to_query_string(self) -> str:
         parts = []
         if self.gpu_name:
-            parts.append(f"gpu_name={self.gpu_name}")
+            parts.append(f"gpu_name={self.gpu_name.replace(' ', '_')}")
         if self.num_gpus is not None:
             parts.append(f"num_gpus>={self.num_gpus}")
         if self.gpu_ram_min is not None:
