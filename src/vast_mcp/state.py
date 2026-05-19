@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import stat
 from pathlib import Path
 
 from vast_mcp.models import Config, Experiment, Instance
@@ -33,6 +35,10 @@ class StateManager:
 
     def save_config(self, config: Config) -> None:
         self._write_json("config.json", config.to_dict())
+        # Enforce restrictive permissions since config may contain API key
+        config_path = self.state_dir / "config.json"
+        if config_path.exists():
+            os.chmod(config_path, stat.S_IRUSR | stat.S_IWUSR)
 
     def update_config(self, key: str, value) -> None:
         config = self.load_config()

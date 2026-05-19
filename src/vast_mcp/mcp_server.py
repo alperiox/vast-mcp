@@ -136,15 +136,13 @@ def set_config(key: str, value: str) -> str:
     """Update a configuration field.
 
     Args:
-        key: Config key (idle_threshold_hours, monitor_interval_minutes, default_instance_type, default_sort, default_max_results).
+        key: Config key (api_key, idle_threshold_hours, monitor_interval_minutes, default_instance_type, default_sort, default_max_results).
         value: New value (numeric values are converted automatically).
     """
     # Coerce to the correct type based on the existing field
     from vast_mcp.models import Config
     if key not in Config.__dataclass_fields__:
         return f"Error: Unknown config key: {key}"
-    if key == "api_key":
-        return "Error: Use VAST_API_KEY env var or 'vastai set api-key' to set the API key."
     field_type = Config.__dataclass_fields__[key].type
     converted: int | float | str = value
     if field_type == "int":
