@@ -196,14 +196,22 @@ def get_ssh_command(instance_id: int) -> str:
     except Exception as e:
         return f"Error fetching SSH info: {e}"
 
+    # Parse ssh://user@host:port into a usable command
+    import re
+    match = re.match(r"ssh://(\w+)@([^:]+):(\d+)", ssh_url)
+    if match:
+        user, host, port = match.groups()
+    else:
+        return f"SSH URL: {ssh_url} (could not parse into command)"
+
     key_flag = f" -i {config.ssh_key_path}" if config.ssh_key_path else ""
-    if not key_flag:
-        key_flag = "  # No SSH key configured — run set_ssh_key first"
+    no_key_note = "" if config.ssh_key_path else "\n  # No SSH key configured — run set_ssh_key first"
 
     return (
         f"SSH into instance {instance_id} ({inst.gpu_name} x{inst.num_gpus}):\n\n"
-        f"  {ssh_url}{key_flag}\n\n"
-        f"SDK SSH URL: {ssh_url}"
+        f"  ssh -p {port}{key_flag} {user}@{host}{no_key_note}\n\n"
+        f"SCP files:\n"
+        f"  scp -P {port}{key_flag} local_file {user}@{host}:/path/"
     )
 
 
