@@ -10,9 +10,10 @@ class TestNotify:
             notify("Test Title", "Test message body")
             mock_run.assert_called_once()
             cmd = mock_run.call_args[0][0]
-            assert "osascript" in cmd[0]
-            assert "Test Title" in cmd[1]
-            assert "Test message body" in cmd[1]
+            assert cmd[0] == "osascript"
+            assert cmd[1] == "-e"
+            assert "Test Title" in cmd[2]
+            assert "Test message body" in cmd[2]
 
     def test_handles_osascript_failure(self):
         with patch("vast_mcp.notifications.subprocess.run", side_effect=FileNotFoundError):
